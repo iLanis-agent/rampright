@@ -48,9 +48,9 @@
     var p = R.plan(r);
     $('len').textContent = 'Ramp run ' + f(p.runLength) + ' (' + ft(p.runLength) + ')';
     $('det').textContent = p.runs + ' run' + (p.runs > 1 ? 's' : '') + ' of ' + f(p.risePerRun) + ' rise' + (p.landings ? ', ' + p.landings + ' landing' + (p.landings > 1 ? 's' : '') + ' of ' + f(R.LANDING) + '; ' : '; ') + 'total length ' + f(p.totalLength) + ' (' + ft(p.totalLength) + '). ' + (p.handrails ? 'Handrails required (rise over 6 in).' : 'Handrails not required (rise 6 in or less).');
-    var x = 20, w = 560, scale = w / p.totalLength, ymax = 100, h = Math.min(90, r * scale * 3), d = 'M' + x + ',' + ymax, cx = x, rr = p.risePerRun * scale * 3, i;
+    var x = 20, w = 560, scale = w / p.totalLength, ymax = 100, vx = Math.min(3, 80 / (r * scale)), d = 'M' + x + ',' + ymax, cx = x, rr = p.risePerRun * scale * vx, i;
     for (i = 0; i < p.runs; i++) { var len = (p.runLength / p.runs) * scale; d += ' L' + (cx + len) + ',' + (ymax - rr * (i + 1)); cx += len; if (i < p.runs - 1) { d += ' L' + (cx + R.LANDING * scale) + ',' + (ymax - rr * (i + 1)); cx += R.LANDING * scale; } }
-    $('draw').innerHTML = '<line x1="10" y1="100" x2="590" y2="100" stroke="#3a5551"/><path d="' + d + ' L' + cx + ',100 Z" fill="#59d0b0" fill-opacity=".25" stroke="#59d0b0" stroke-width="2"/><text x="20" y="116" fill="#9db8b1" font-size="11">vertical exaggerated 3x</text>';
+    $('draw').innerHTML = '<line x1="10" y1="100" x2="590" y2="100" stroke="#3a5551"/><path d="' + d + ' L' + cx + ',100 Z" fill="#59d0b0" fill-opacity=".25" stroke="#59d0b0" stroke-width="2"/><text x="20" y="116" fill="#9db8b1" font-size="11">vertical scale exaggerated '+(Math.round(vx*10)/10)+'x</text>';
   }
   function check() {
     var r = R.toIn(parseFloat($('rise2').value), unit), n = R.toIn(parseFloat($('run2').value), unit);
