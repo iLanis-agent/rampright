@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RampRight - plan or check an accessible ramp</title>
+<style>
+  * { box-sizing:border-box; margin:0; padding:0; }
+  body { font-family:-apple-system,'Segoe UI',Roboto,Helvetica,Arial,sans-serif; background:#16201f; color:#e8f3f0; line-height:1.5; }
+  .wrap { max-width:660px; margin:0 auto; padding:26px 18px 50px; }
+  h1 { font-size:28px; } h1 span { color:#59d0b0; }
+  .sub { color:#9db8b1; margin:6px 0 18px; }
+  .card { background:#1f2f2d; border-radius:14px; padding:16px; margin-bottom:14px; }
+  .row { display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; } label { display:block; font-size:13px; color:#9db8b1; margin-bottom:4px; }
+  input { background:#16201f; color:#e8f3f0; border:1px solid #3a5551; border-radius:8px; padding:9px; font-size:16px; width:110px; }
+  button { background:#2b403d; color:#e8f3f0; border:0; padding:9px 14px; border-radius:8px; cursor:pointer; font-size:15px; } button.on { background:#59d0b0; color:#16201f; font-weight:700; }
+  h2 { font-size:17px; margin-bottom:8px; } .big { font-size:30px; font-weight:800; color:#59d0b0; } .muted { color:#9db8b1; font-size:14px; }
+  .pill { display:inline-block; padding:3px 12px; border-radius:99px; font-weight:700; font-size:14px; } .ok { background:#1d6b45; } .warn { background:#a0701c; } .bad { background:#a33a3a; }
+  ul { margin:8px 0 0 18px; font-size:14px; } .note { font-size:12.5px; color:#7e9992; }
+  svg { width:100%; height:auto; display:block; margin-top:10px; }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Ramp<span>Right</span></h1>
+  <div class="sub">How long must an accessible ramp be? Does the one you have pass? Based on the 2010 ADA Standards, section 405.</div>
+  <div class="card"><button id="uIn" class="on">Inches</button> <button id="uCm">Centimeters</button></div>
+  <div class="card"><h2>1. Plan a ramp</h2>
+    <div class="row"><div><label>Total rise (<span class="u">in</span>)</label><input id="rise1" type="number" value="24"></div></div>
+    <div style="margin-top:10px"><div class="big" id="len">-</div><div class="muted" id="det"></div></div>
+    <svg id="draw" viewBox="0 0 600 120" role="img" aria-label="Ramp side view"></svg>
+  </div>
+  <div class="card"><h2>2. Check an existing ramp</h2>
+    <div class="row"><div><label>Rise (<span class="u">in</span>)</label><input id="rise2" type="number" value="8"></div><div><label>Run length (<span class="u">in</span>)</label><input id="run2" type="number" value="80"></div></div>
+    <div style="margin-top:10px"><span class="pill" id="verdict">-</span> <span id="slp" class="muted"></span></div><ul id="iss"></ul>
+  </div>
+  <div class="note">New ramps: running slope 1:12 max, cross slope 1:48 max, rise 30 in max per run, 60 in landings (at least as wide as the ramp), clear width 36 in min, handrails when the rise is over 6 in. Slopes steeper than 1:12 are allowed only in existing sites (Table 405.2): up to 1:10 for a rise of 6 in or less, up to 1:8 for 3 in or less. Local codes can be stricter. Not a substitute for a design professional.</div>
+</div>
+<script src="engine.js"></script>
+<script>
+(function () {
+  var R = window.Ramp, unit = 'in', $ = function (i) { return document.getElementById(i); };
+  function f(v) { return unit === 'cm' ? Math.round(R.fromIn(v, 'cm')) + ' cm' : (Math.round(v * 10) / 10) + ' in'; }
+  function ft(v) { return (Math.round(v / 12 * 10) / 10) + ' ft'; }
+  function plan() {
+    var r = R.toIn(parseFloat($('rise1').value), unit);
+    if (!(r > 0)) { $('len').textContent = '-'; $('det').textContent = 'Enter a rise above zero'; $('draw').innerHTML = ''; return; }
+    var p = R.plan(r);
+    $('len').textContent = 'Ramp run ' + f(p.runLength) + ' (' + ft(p.runLength) + ')';
+    $('det').textContent = p.runs + ' run' + (p.runs > 1 ? 's' : '') + ' of ' + f(p.risePerRun) + ' rise' + (p.landings ? ', ' + p.landings + ' landing' + (p.landings > 1 ? 's' : '') + ' of ' + f(R.LANDING) + '; ' : '; ') + 'total length ' + f(p.totalLength) + ' (' + ft(p.totalLength) + '). ' + (p.handrails ? 'Handrails required (rise over 6 in).' : 'Handrails not required (rise 6 in or less).');
+    var x = 20, w = 560, scale = w / p.totalLength, ymax = 100, h = Math.min(90, r * scale * 3), d = 'M' + x + ',' + ymax, cx = x, rr = p.risePerRun * scale * 3, i;
+    for (i = 0; i < p.runs; i++) { var len = (p.runLength / p.runs) * scale; d += ' L' + (cx + len) + ',' + (ymax - rr * (i + 1)); cx += len; if (i < p.runs - 1) { d += ' L' + (cx + R.LANDING * scale) + ',' + (ymax - rr * (i + 1)); cx += R.LANDING * scale; } }
+    $('draw').innerHTML = '<line x1="10" y1="100" x2="590" y2="100" stroke="#3a5551"/><path d="' + d + ' L' + cx + ',100 Z" fill="#59d0b0" fill-opacity=".25" stroke="#59d0b0" stroke-width="2"/><text x="20" y="116" fill="#9db8b1" font-size="11">vertical exaggerated 3x</text>';
+  }
+  function check() {
+    var r = R.toIn(parseFloat($('rise2').value), unit), n = R.toIn(parseFloat($('run2').value), unit);
+    if (!(r > 0) || !(n > 0)) { $('verdict').textContent = '-'; $('verdict').className = 'pill'; $('slp').textContent = 'Enter rise and run'; $('iss').innerHTML = ''; return; }
+    var c = R.check(r, n), cls = c.status === 'Compliant' ? 'ok' : c.status === 'Too steep' ? 'bad' : 'warn';
+    $('verdict').textContent = c.status; $('verdict').className = 'pill ' + cls;
+    $('slp').textContent = '1:' + (Math.round(c.slope.ratio * 10) / 10) + ' = ' + (Math.round(c.slope.percent * 10) / 10) + '% = ' + (Math.round(c.slope.degrees * 10) / 10) + ' degrees';
+    var li = c.issues.slice(); if (c.shortBy > 0) li.push('For 1:12 you need ' + f(c.needRun) + ' of run, ' + f(c.shortBy) + ' more'); if (c.handrails) li.push('Handrails required on both sides (rise over 6 in)');
+    $('iss').innerHTML = li.map(function (t) { return '<li>' + t + '</li>'; }).join('');
+  }
+  function all() { plan(); check(); }
+  function setUnit(u) { var old = unit; ['rise1', 'rise2', 'run2'].forEach(function (i) { var v = parseFloat($(i).value); if (!isNaN(v)) $(i).value = Math.round(R.fromIn(R.toIn(v, old), u) * 10) / 10; }); unit = u; $('uIn').className = u === 'in' ? 'on' : ''; $('uCm').className = u === 'cm' ? 'on' : ''; [].forEach.call(document.querySelectorAll('.u'), function (e) { e.textContent = u; }); all(); }
+  $('uIn').onclick = function () { setUnit('in'); }; $('uCm').onclick = function () { setUnit('cm'); };
+  ['rise1', 'rise2', 'run2'].forEach(function (i) { $(i).oninput = all; });
+  all();
+})();
+</script>
+</body>
+</html>
